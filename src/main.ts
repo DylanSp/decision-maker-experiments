@@ -1,46 +1,40 @@
-import { Ballot, constructBallotPool, mustCreateBallot } from "./voting/ballot";
-import { VoteConfiguration, instantRunoffVote } from "./voting/voting";
+import { allScenarios } from "./scenarios";
+import { VoteConfiguration, VoteMetadata, instantRunoffVote } from "./voting/voting";
 
-type BasicScenario<TCandidate> = {
-  candidates: Set<TCandidate>;
-  ballots: Array<Ballot<TCandidate>>;
-};
+function printReport<TCandidate>(metadata: VoteMetadata<TCandidate>) {
+  if (!metadata.exactlyFiftyPercentWinnerPresent && metadata.lastPlaceTies.length === 0) {
+    console.log("No exactly 50% winner present, no last place ties");
+    return;
+  }
 
-// should return "gore" as winner
-// first round - no one has majority, Nader gets eliminated, nader ballots move down to Gore as their new first preference
-// second round - Gore has 5 votes, Bush has 4, Gore has majority
-function secondPreferenceScenario(): BasicScenario<string> {
-  const bush = "bush";
-  const gore = "gore";
-  const nader = "nader";
+  if (metadata.exactlyFiftyPercentWinnerPresent) {
+    console.log("Winner won with exactly 50% of votes");
+  }
 
-  const bushSlate = mustCreateBallot([bush, gore, nader]);
-  const goreSlate = mustCreateBallot([gore, nader, bush]);
-  const naderSlate = mustCreateBallot([nader, gore, bush]);
-
-  const ballots = constructBallotPool([
-    [bushSlate, 4],
-    [goreSlate, 3],
-    [naderSlate, 2],
-  ]);
-  const candidates = new Set([bush, gore, nader]);
-
-  return {
-    candidates,
-    ballots,
-  };
+  if (metadata.lastPlaceTies.length === 0) {
+    console.log("No last-place ties");
+  } else {
+    for (const lastPlaceTie of metadata.lastPlaceTies) {
+      console.log(`Last-place tie in round ${lastPlaceTie.round}`);
+      console.log(
+        `Least popular candidates: ${lastPlaceTie.leastPopularCandidates}` /*, lastPlaceTie.leastPopularCandidates*/,
+      );
+      console.log(`Removed candidate: ${lastPlaceTie.removedCandidate}`);
+      console.log();
+    }
+  }
 }
 
 const config: VoteConfiguration = {
   logToConsole: true,
   checkForFiftyPercentWinners: false,
-  checkForLastPlaceTies: false,
+  checkForLastPlaceTies: true,
 };
 
-const scenario = secondPreferenceScenario();
+const scenario = allScenarios.lastPlaceTie;
 
 const [result, metadata] = instantRunoffVote(scenario.candidates, scenario.ballots, config);
 
 console.log(result);
 console.log();
-console.log(metadata);
+printReport(metadata);

@@ -47,6 +47,7 @@ function tallyFirstPreferences<TCandidate>(
 }
 
 // TODO - maybe this should only have logToConsole switch? the checks can be run every time without issues and returned as part of the metadata
+// being able to put code for checking last place ties behind an if() statement is nice for organization, but there's no real reason not to always track it
 export type VoteConfiguration = {
   logToConsole: boolean;
   checkForFiftyPercentWinners: boolean;
@@ -63,11 +64,12 @@ const defaultVoteConfig: VoteConfiguration = {
 type LastPlaceTie<TCandidate> = {
   round: number;
   leastPopularCandidates: Array<TCandidate>;
+  removedCandidate: TCandidate;
   // TODO - track number of votes least popular candidates each attracted?
   // TODO - track number of votes for each candidate in that round?
 };
 
-type VoteMetadata<TCandidate> = {
+export type VoteMetadata<TCandidate> = {
   exactlyFiftyPercentWinnerPresent: boolean;
   lastPlaceTies: Array<LastPlaceTie<TCandidate>>;
 };
@@ -149,28 +151,35 @@ export function instantRunoffVote<TCandidate>(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const lastVote = sortedVotes.at(-1)!;
     candidatesRemaining.delete(lastVote.candidate);
+    if (config.logToConsole) {
+      console.log("Last-place candidate being removed:");
+      console.log(lastVote.candidate);
+    }
 
     // check to see if there were multiple last-place candidates, add to metadata report if there were
-    // TODO - see if there's a way to structure this to avoid non-null assertions
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const secondToLastVote = sortedVotes.at(-2)!;
-    if (lastVote.voteCount === secondToLastVote.voteCount) {
-      const lastPlaceTie: LastPlaceTie<TCandidate> = {
-        round,
-        leastPopularCandidates: [lastVote.candidate, secondToLastVote.candidate],
-      };
+    if (config.checkForLastPlaceTies) {
+      // TODO - see if there's a way to structure this to avoid non-null assertions
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const secondToLastVote = sortedVotes.at(-2)!;
+      if (lastVote.voteCount === secondToLastVote.voteCount) {
+        const lastPlaceTie: LastPlaceTie<TCandidate> = {
+          round,
+          leastPopularCandidates: [lastVote.candidate, secondToLastVote.candidate],
+          removedCandidate: lastVote.candidate,
+        };
 
-      // need to use spread operator because reverse() is a mutating method;
-      // if I can get ts-jest working with lib: es2023, that enables toReversed() method, and for loop can just be "of sortedVotes.toReversed().slice(2)"
-      const votesInAscendingOrder = [...sortedVotes].reverse();
+        // need to use spread operator because reverse() is a mutating method;
+        // if I can get ts-jest working with lib: es2023, that enables toReversed() method, and for loop can just be "of sortedVotes.toReversed().slice(2)"
+        const votesInAscendingOrder = [...sortedVotes].reverse();
 
-      for (const vote of votesInAscendingOrder.slice(2)) {
-        if (vote.voteCount === lastVote.voteCount) {
-          lastPlaceTie.leastPopularCandidates.push(vote.candidate);
+        for (const vote of votesInAscendingOrder.slice(2)) {
+          if (vote.voteCount === lastVote.voteCount) {
+            lastPlaceTie.leastPopularCandidates.push(vote.candidate);
+          }
         }
-      }
 
-      metadata.lastPlaceTies.push(lastPlaceTie);
+        metadata.lastPlaceTies.push(lastPlaceTie);
+      }
     }
 
     // remove the least popular candidate from all ballots; if removeElement() returns None for any ballot, throw error
