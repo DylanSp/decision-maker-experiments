@@ -1,5 +1,6 @@
-import { isNone } from "fp-ts/lib/Option";
+import { Applicative, isNone } from "fp-ts/lib/Option";
 import { Ballot, validateBallots } from "./ballot";
+import { array } from "fp-ts";
 
 type VoteResult<TCandidate> =
   | {
@@ -83,7 +84,7 @@ export function instantRunoffVote<TCandidate>(
     if (ballots.length % 2 == 0 && votesForFirstCandidate === ballots.length / 2) {
       const [secondCandidate, votesForSecondCandidate] = sortedVotes[1];
 
-      // if there's a tie between two candidates who each have 50% of the votes
+      // if there's a tie between two candidates who each have 50% of the votes, there's a tie
       if (votesForSecondCandidate === votesForFirstCandidate) {
         return {
           kind: "tie",
@@ -107,21 +108,17 @@ export function instantRunoffVote<TCandidate>(
     const [leastPopularCandidate] = sortedVotes.at(-1)!;
     candidatesRemaining.delete(leastPopularCandidate);
 
-    // TODO - with a proper Option type and FP library, this could potentially be rewritten as:
-    // 1. map ballots (ballot => ballot.removeElement(leastPopularCandidate)) - Array<Option<Ballot<TCandidate>>>
-    // 2. do whatever transform converts Array<Option<>> into Option<Array<>>
-    // 2a. (in Haskell terms, looks like this is `traverse`)
-    // 2b. ChatGPT-provided example with fp-ts: https://chat.openai.com/share/ae0412b2-aeba-495e-89c0-df38f9798080
-    // 2c. probably don't need pipe(), just call array.traverse(Option)(ballot => ballot.removeElement(leastPopularCandidate))(ballots)
-    // 3. check Option<Array<Ballot<TCandidate>>>, throw error if None, otherwise assign ballots = newBallots
-    const newBallots: Array<Ballot<TCandidate>> = [];
-    for (const ballot of ballots) {
-      const updatedBallot = ballot.removeElement(leastPopularCandidate);
-      if (isNone(updatedBallot)) {
-        throw new Error("Invariant violated - all candidates were removed from a ballot before finding a winner");
-      }
-      newBallots.push(updatedBallot.value);
+    // remove the least popular candidate from all ballots; if removeElement() returns None for any ballot, throw error
+    // `Applicative` here is the Applicative instance for Option
+    // need to specify the type of `ballot` in the lambda because TS can't infer it
+    const newBallots = array.traverse(Applicative)((ballot: Ballot<TCandidate>) =>
+      ballot.removeCandidate(leastPopularCandidate),
+    )(ballots);
+
+    if (isNone(newBallots)) {
+      throw new Error("Invariant violated - all candidates were removed from a ballot before finding a winner");
     }
-    ballots = newBallots;
+
+    ballots = newBallots.value;
   }
 }

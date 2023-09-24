@@ -54,7 +54,7 @@ export class Ballot<TCandidate> {
   }
 
   // doesn't mutate this ballot - returns either a new ballot with at least one entry (but without candidateToRemove), or None for a now-empty ballot
-  public removeElement(candidateToRemove: TCandidate): Option<Ballot<TCandidate>> {
+  public removeCandidate(candidateToRemove: TCandidate): Option<Ballot<TCandidate>> {
     const newRanking = this.ranking.filter((candidate) => candidate !== candidateToRemove);
     // TODO - add assertion (how?) that newElements.length = this.elements.length - 1
 
