@@ -1,6 +1,16 @@
-import { constructBallotPool, mustCreateBallot } from "../src/voting/ballot";
-import { instantRunoffVote, makeTieResult, makeWinnerResult } from "../src/voting/voting";
+import { Ballot, constructBallotPool, mustCreateBallot } from "../src/voting/ballot";
+import { VoteResult, instantRunoffVote, makeTieResult, makeWinnerResult } from "../src/voting/voting";
 
+// wrapper function around instantRunoffVote() that discards metadata
+function voteAndGetResult<TCandidate>(
+  candidates: Set<TCandidate>,
+  initialBallots: Array<Ballot<TCandidate>>,
+): VoteResult<TCandidate> {
+  const [result] = instantRunoffVote(candidates, initialBallots);
+  return result;
+}
+
+// TODO - make these tests table-driven?
 describe("Instant-runoff voting algorithm", () => {
   it("Finds the winner in a simple majority", () => {
     const expectedWinner = "A";
@@ -15,7 +25,7 @@ describe("Instant-runoff voting algorithm", () => {
     ]);
     const candidates = new Set([expectedWinner, expectedLoser]);
 
-    const actualResult = instantRunoffVote(candidates, ballots);
+    const actualResult = voteAndGetResult(candidates, ballots);
 
     const expectedResult = makeWinnerResult(expectedWinner);
     expect(actualResult).toEqual(expectedResult);
@@ -32,7 +42,7 @@ describe("Instant-runoff voting algorithm", () => {
     ]);
     const candidates = new Set([candidateA, candidateB]);
 
-    const actualResult = instantRunoffVote(candidates, ballots);
+    const actualResult = voteAndGetResult(candidates, ballots);
 
     const expectedResult = makeTieResult(candidateA, candidateB);
     expect(actualResult).toEqual(expectedResult);
@@ -54,7 +64,7 @@ describe("Instant-runoff voting algorithm", () => {
     ]);
     const candidates = new Set([candidateA, candidateB, candidateC]);
 
-    const actualResult = instantRunoffVote(candidates, ballots);
+    const actualResult = voteAndGetResult(candidates, ballots);
 
     const expectedResult = makeWinnerResult(candidateA);
     expect(actualResult).toEqual(expectedResult);
@@ -76,7 +86,7 @@ describe("Instant-runoff voting algorithm", () => {
     ]);
     const candidates = new Set([bush, gore, nader]);
 
-    const actualResult = instantRunoffVote(candidates, ballots);
+    const actualResult = voteAndGetResult(candidates, ballots);
 
     // should return "gore" as winner
     // first round - no one has majority, Nader gets eliminated, nader ballots move down to Gore as their new first preference
