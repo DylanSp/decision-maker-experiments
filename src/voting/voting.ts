@@ -168,11 +168,7 @@ export function instantRunoffVote<TCandidate>(
           removedCandidate: lastVote.candidate,
         };
 
-        // need to use spread operator because reverse() is a mutating method;
-        // if I can get ts-jest working with lib: es2023, that enables toReversed() method, and for loop can just be "of sortedVotes.toReversed().slice(2)"
-        const votesInAscendingOrder = [...sortedVotes].reverse();
-
-        for (const vote of votesInAscendingOrder.slice(2)) {
+        for (const vote of sortedVotes.toReversed().slice(2)) {
           if (vote.voteCount === lastVote.voteCount) {
             lastPlaceTie.leastPopularCandidates.push(vote.candidate);
           }
