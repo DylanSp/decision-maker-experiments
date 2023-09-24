@@ -46,9 +46,22 @@ function tallyFirstPreferences<TCandidate>(
   return talliedVotes;
 }
 
+export type VoteConfiguration = {
+  logToConsole: boolean;
+  checkForFiftyPercentWinners: boolean;
+  checkForLastPlaceTies: boolean;
+};
+
+const defaultVoteConfig: VoteConfiguration = {
+  logToConsole: false,
+  checkForFiftyPercentWinners: false,
+  checkForLastPlaceTies: false,
+};
+
 export function instantRunoffVote<TCandidate>(
   candidates: Set<TCandidate>,
   initialBallots: Array<Ballot<TCandidate>>, // ballots can't be a Set, duplicate ballots are expected
+  config: VoteConfiguration = defaultVoteConfig,
 ): VoteResult<TCandidate> {
   if (!validateBallots(candidates, initialBallots)) {
     throw new Error("Invalid ballots");
@@ -57,20 +70,29 @@ export function instantRunoffVote<TCandidate>(
   const candidatesRemaining = new Set([...candidates]); // by-value copy of candidates, so we can mutate this freely
   let ballots = [...initialBallots]; // mutable copy of initialBallots - will be modified with updated ballots as candidates are removed
 
+  let round = 1;
+
   while (true) {
-    // console.log("Starting round");
+    if (config.logToConsole) {
+      console.log(`Starting round ${round}`);
+    }
 
     const talliedVotes = tallyFirstPreferences(candidatesRemaining, ballots);
-    // console.log("talliedVotes:");
-    // console.log(talliedVotes);
+    if (config.logToConsole) {
+      console.log("talliedVotes:");
+      console.log(talliedVotes);
+    }
 
     const sortedVotes = [...talliedVotes].sort(
       ([, numVotesA], [, numVotesB]) => numVotesB - numVotesA, // sorts in descending order
     );
     const [firstCandidate, votesForFirstCandidate] = sortedVotes[0];
-    // console.log("sortedVotes:");
-    // console.log(sortedVotes);
-    // console.log(sortedVotes[0]);
+    if (config.logToConsole) {
+      console.log("sortedVotes:");
+      console.log(sortedVotes);
+      console.log("firstCandidate:");
+      console.log(firstCandidate);
+    }
 
     // if there's a majority, we have a single winner
     if (votesForFirstCandidate > ballots.length / 2) {
@@ -120,5 +142,10 @@ export function instantRunoffVote<TCandidate>(
     }
 
     ballots = newBallots.value;
+
+    if (config.logToConsole) {
+      round++;
+      console.log();
+    }
   }
 }

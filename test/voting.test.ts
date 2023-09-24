@@ -1,31 +1,5 @@
-import { isNone } from "fp-ts/lib/Option";
-import { repeatNTimes } from "../src/utils";
-import { Ballot } from "../src/voting/ballot";
+import { constructBallotPool, mustCreateBallot } from "../src/voting/ballot";
 import { instantRunoffVote, makeTieResult, makeWinnerResult } from "../src/voting/voting";
-
-// utility for testing - given an array of slates and the number of voters for each slate, create array of all ballots
-function constructBallotPool<TCandidate>(
-  slatesWithCounts: Array<[Ballot<TCandidate>, number]>,
-): Array<Ballot<TCandidate>> {
-  const allBallots: Array<Ballot<TCandidate>> = [];
-
-  for (const [slate, numVotes] of slatesWithCounts) {
-    const ballotsFromSlate = repeatNTimes(slate, numVotes);
-    allBallots.push(...ballotsFromSlate);
-  }
-
-  return allBallots;
-}
-
-// utility for testing to avoid unnecessary checks for None everywhere
-function mustCreateBallot<TCandidate>(rankedCandidates: Array<TCandidate>): Ballot<TCandidate> {
-  const possibleBallot = Ballot.createBallot(rankedCandidates);
-  if (isNone(possibleBallot)) {
-    throw new Error("Unable to construct ballot");
-  }
-
-  return possibleBallot.value;
-}
 
 describe("Instant-runoff voting algorithm", () => {
   it("Finds the winner in a simple majority", () => {

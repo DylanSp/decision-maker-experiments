@@ -1,5 +1,5 @@
-import { Option, none, some } from "fp-ts/lib/Option";
-import { areAllElementsDistinct } from "../utils";
+import { Option, isNone, none, some } from "fp-ts/lib/Option";
+import { areAllElementsDistinct, repeatNTimes } from "../utils";
 
 export class Ballot<TCandidate> {
   private ranking: Array<TCandidate>;
@@ -78,4 +78,29 @@ export function validateBallots<TCandidate>(candidates: Set<TCandidate>, ballots
   // all ballots must be the same size as candidates
   // all ballots must rank every candidate
   return ballots.every((ballot) => ballot.ranksAllCandidates(candidates));
+}
+
+// utility function to streamline ballot creation
+export function mustCreateBallot<TCandidate>(rankedCandidates: Array<TCandidate>): Ballot<TCandidate> {
+  const possibleBallot = Ballot.createBallot(rankedCandidates);
+  if (isNone(possibleBallot)) {
+    throw new Error("Unable to construct ballot");
+  }
+
+  return possibleBallot.value;
+}
+
+// utility function to streamline creating all ballots for an election
+// given an array of slates and the number of voters for each slate, create array of all ballots
+export function constructBallotPool<TCandidate>(
+  slatesWithCounts: Array<[Ballot<TCandidate>, number]>,
+): Array<Ballot<TCandidate>> {
+  const allBallots: Array<Ballot<TCandidate>> = [];
+
+  for (const [slate, numVotes] of slatesWithCounts) {
+    const ballotsFromSlate = repeatNTimes(slate, numVotes);
+    allBallots.push(...ballotsFromSlate);
+  }
+
+  return allBallots;
 }
