@@ -60,14 +60,16 @@ const defaultVoteConfig: VoteConfiguration = {
 };
 
 // report on edge cases
+type LastPlaceTie<TCandidate> = {
+  round: number;
+  leastPopularCandidates: Array<TCandidate>;
+  // TODO - track number of votes least popular candidates each attracted?
+  // TODO - track number of votes for each candidate in that round?
+};
+
 type VoteMetadata<TCandidate> = {
   exactlyFiftyPercentWinnerPresent: boolean;
-  lastPlaceTies: Array<{
-    round: number;
-    leastPopularCandidates: Array<TCandidate>;
-    // TODO - track number of votes least popular candidates each attracted?
-    // TODO - track number of votes for each candidate in that round?
-  }>;
+  lastPlaceTies: Array<LastPlaceTie<TCandidate>>;
 };
 
 export function instantRunoffVote<TCandidate>(
@@ -100,36 +102,41 @@ export function instantRunoffVote<TCandidate>(
       console.log(talliedVotes);
     }
 
-    const sortedVotes = [...talliedVotes].sort(
-      ([, numVotesA], [, numVotesB]) => numVotesB - numVotesA, // sorts in descending order
-    );
-    const [firstCandidate, votesForFirstCandidate] = sortedVotes[0];
+    const sortedVotes = [...talliedVotes]
+      .sort(
+        ([, numVotesA], [, numVotesB]) => numVotesB - numVotesA, // sorts in descending order
+      )
+      .map(([candidate, voteCount]) => ({
+        candidate,
+        voteCount,
+      }));
+    const firstVote = sortedVotes[0];
     if (config.logToConsole) {
       console.log("sortedVotes:");
       console.log(sortedVotes);
-      console.log("firstCandidate:");
-      console.log(firstCandidate);
+      console.log("leading candidate:");
+      console.log(firstVote.candidate);
     }
 
     // if there's a majority, we have a single winner
-    if (votesForFirstCandidate > ballots.length / 2) {
-      const result = makeWinnerResult(firstCandidate);
+    if (firstVote.voteCount > ballots.length / 2) {
+      const result = makeWinnerResult(firstVote.candidate);
       return [result, metadata];
     }
 
     // check for the first candidate having exactly 50% of the votes (can only happen if number of ballots is even)
-    if (ballots.length % 2 == 0 && votesForFirstCandidate === ballots.length / 2) {
-      const [secondCandidate, votesForSecondCandidate] = sortedVotes[1];
+    if (ballots.length % 2 == 0 && firstVote.voteCount === ballots.length / 2) {
+      const secondVote = sortedVotes[1];
 
       // if there's a tie between two candidates who each have 50% of the votes, there's a tie
-      if (votesForSecondCandidate === votesForFirstCandidate) {
-        const result = makeTieResult(firstCandidate, secondCandidate);
+      if (firstVote.voteCount === secondVote.voteCount) {
+        const result = makeTieResult(firstVote.candidate, secondVote.candidate);
         return [result, metadata];
       }
 
       // if the second candidate has less than 50%, count first candidate as winner
       // IMPORTANT - this assumes that a candidate with exactly 50% of the votes can win, if no competitor also has 50%
-      const result = makeWinnerResult(firstCandidate);
+      const result = makeWinnerResult(firstVote.candidate);
       metadata.exactlyFiftyPercentWinnerPresent = true;
 
       return [result, metadata];
@@ -140,28 +147,26 @@ export function instantRunoffVote<TCandidate>(
 
     // non-null assertion should be safe, but TODO - check
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const [leastPopularCandidate] = sortedVotes.at(-1)!;
-    candidatesRemaining.delete(leastPopularCandidate);
+    const lastVote = sortedVotes.at(-1)!;
+    candidatesRemaining.delete(lastVote.candidate);
 
     // check to see if there were multiple last-place candidates, add to metadata report if there were
     // TODO - see if there's a way to structure this to avoid non-null assertions
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const leastPopularVote = sortedVotes.at(-1)!;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const secondLeastPopularVote = sortedVotes.at(-2)!;
-    if (leastPopularVote[1] === secondLeastPopularVote[1]) {
-      const lastPlaceTie = {
+    const secondToLastVote = sortedVotes.at(-2)!;
+    if (lastVote.voteCount === secondToLastVote.voteCount) {
+      const lastPlaceTie: LastPlaceTie<TCandidate> = {
         round,
-        leastPopularCandidates: [leastPopularVote[0], secondLeastPopularVote[0]],
+        leastPopularCandidates: [lastVote.candidate, secondToLastVote.candidate],
       };
 
       // need to use spread operator because reverse() is a mutating method;
       // if I can get ts-jest working with lib: es2023, that enables toReversed() method, and for loop can just be "of sortedVotes.toReversed().slice(2)"
       const votesInAscendingOrder = [...sortedVotes].reverse();
 
-      for (const [candidate, votes] of votesInAscendingOrder.slice(2)) {
-        if (votes === leastPopularVote[1]) {
-          lastPlaceTie.leastPopularCandidates.push(candidate);
+      for (const vote of votesInAscendingOrder.slice(2)) {
+        if (vote.voteCount === lastVote.voteCount) {
+          lastPlaceTie.leastPopularCandidates.push(vote.candidate);
         }
       }
 
@@ -172,7 +177,7 @@ export function instantRunoffVote<TCandidate>(
     // `Applicative` here is the Applicative instance for Option
     // need to specify the type of `ballot` in the lambda because TS can't infer it
     const newBallots = array.traverse(Applicative)((ballot: Ballot<TCandidate>) =>
-      ballot.removeCandidate(leastPopularCandidate),
+      ballot.removeCandidate(lastVote.candidate),
     )(ballots);
 
     if (isNone(newBallots)) {
