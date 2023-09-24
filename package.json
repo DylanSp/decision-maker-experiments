@@ -28,5 +28,8 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"
+  },
+  "dependencies": {
+    "fp-ts": "^2.16.1"
   }
 }
