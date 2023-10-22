@@ -1,6 +1,6 @@
 import { Ballot, constructBallotPool, mustCreateBallot } from "./voting/ballot";
 
-type BasicScenario<TCandidate> = {
+export type BasicScenario<TCandidate> = {
   candidates: Set<TCandidate>;
   ballots: Array<Ballot<TCandidate>>;
 };
