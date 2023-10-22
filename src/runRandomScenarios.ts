@@ -73,11 +73,15 @@ for (const numCandidates of possibleNumCandidates) {
     const simulationReport = simulateScenario(numCandidates, numVoters);
     console.log(`Report for ${numVoters} voters with ${numCandidates} candidates`);
     console.log(`Tied result: ${formatProbabilityAsPercentage(simulationReport.probabilityOfTie)}`);
+
+    // TODO - only really need to report this when numVoters is even (otherwise, will always be 0%)
+    // TODO - if I modify this function to return a data structure and put presentation elsewhere, presentation logic should be responsible for not displaying this for odd numVoters
     console.log(
       `Winner had exactly 50% of votes: ${formatProbabilityAsPercentage(
         simulationReport.probabilityOfWinnerWithExactlyFiftyPercent,
       )}`,
     );
+
     console.log(
       `Last place tie occurred: ${formatProbabilityAsPercentage(simulationReport.probabilityOfLastPlaceTie)}`,
     );
