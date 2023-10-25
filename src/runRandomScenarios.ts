@@ -58,7 +58,7 @@ function formatProbabilityAsPercentage(prob: number): string {
   // TODO - adjust this when I tune ITERATIONS
   // if ITERATIONS=100, all percentages will be whole numbers
   // if ITERATIONS=1000, all percentages will have at most one digit after decimal point
-  const DIGITS_AFTER_DECIMAL_POINT = 2;
+  const DIGITS_AFTER_DECIMAL_POINT = 1;
   return `${(prob * 100).toFixed(DIGITS_AFTER_DECIMAL_POINT)}%`;
 }
 
