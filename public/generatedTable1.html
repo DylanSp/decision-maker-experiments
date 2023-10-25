@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>My Website</title>
+
+    <style>
+      /* shamelessly stolen from https://github.com/mdn/learning-area/blob/main/html/tables/basic/minimal-table.css */
+      /* also see https://developer.mozilla.org/en-US/docs/Learn/HTML/Tables/Basics */
+      html {
+        font-family: sans-serif;
+      }
+
+      table {
+        border-collapse: collapse;
+        border: 2px solid rgb(200,200,200);
+        letter-spacing: 1px;
+        /* font-size: 0.8rem; */
+      }
+
+      td, th {
+        border: 1px solid rgb(190,190,190);
+        padding: 10px 20px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <table><tr><td></td><th scope="col">3 voters</th><th scope="col">4 voters</th><th scope="col">5 voters</th></tr><tr><th scope="row">3 candidates</th><td>3c/3v</td><td>3c/4v</td><td>3c/5v</td></tr><tr><th scope="row">4 candidates</th><td>4c/3v</td><td>4c/4v</td><td>4c/5v</td></tr></table>
+    </main>
+  </body>
+</html>
