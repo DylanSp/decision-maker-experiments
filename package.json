@@ -8,7 +8,8 @@
     "test:ci": "jest",
     "test:coverage": "jest --coverage",
     "build": "tsc",
-    "main": "tsx src/main.ts"
+    "main": "tsx src/main.ts",
+    "serve": "serve public/"
   },
   "author": "Dylan Sprague",
   "license": "MIT",
@@ -23,6 +24,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "jest": "^29.7.0",
     "prettier": "^2.8.4",
+    "serve": "^14.2.1",
     "ts-jest": "^29.1.1",
     "tsx": "^3.12.10",
     "typescript": "^5.2.2"
